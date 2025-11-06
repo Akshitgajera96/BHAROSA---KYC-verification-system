@@ -1,0 +1,135 @@
+# 🚫 Bharosa Project .gitignore
+
+# Environment Variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Uploads and temporary files
+backend/uploads/
+ai_service/temp/
+tmp/
+temp/
+
+# Docker volumes data
+*_data/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Secrets and Keys
+*.pem
+*.key
+*.cert
+*.crt
+private_keys/
+secrets/
+certbot/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Production build
+frontend/build/
+
+# Blockchain artifacts
+blockchain/artifacts/
+blockchain/cache/
+blockchain/node_modules/
+
+# Certificates
+*.p12
+*.pfx
+
+# Python cache
+**/__pycache__/
+
+# Docker volumes and data
+volumes/
+*_data/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Test files
+test-results/
+playwright-report/
+
+# Debug files
+debug/
+*.debug
+
+# Backup files
+*.backup
+*.bak
+*.old
+*.orig
+
+# Documentation build
+docs/_build/
+site/
+
+# Editor specific
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+.classpath
+
+# Package manager lock files (if you want to ignore them)
+# Uncomment if needed:
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

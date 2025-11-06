@@ -1,0 +1,133 @@
+version: '3.8'
+
+# 🚀 Development Docker Compose - Simple Local Setup
+
+services:
+  # MongoDB
+  mongodb:
+    image: mongo:6.0
+    container_name: bharosa-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=bharosa_admin
+      - MONGO_INITDB_ROOT_PASSWORD=bharosa_password_123
+      - MONGO_INITDB_DATABASE=bharosa_kyc
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - bharosa_net
+    restart: unless-stopped
+
+  # Ganache Blockchain
+  ganache:
+    image: trufflesuite/ganache:latest
+    container_name: bharosa-ganache
+    ports:
+      - "8545:8545"
+    command: >
+      --host 0.0.0.0
+      --port 8545
+      --mnemonic "test test test test test test test test test test test junk"
+      --networkId 1337
+      --accounts 10
+      --defaultBalanceEther 100
+    networks:
+      - bharosa_net
+    restart: unless-stopped
+
+  # AI Service
+  ai_service:
+    build:
+      context: ./ai_service
+      dockerfile: Dockerfile
+    container_name: bharosa-ai
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=info
+    volumes:
+      - ai_temp:/tmp
+      - ./backend/uploads:/app/uploads:ro  # Share uploads folder (read-only)
+      - ./ai_service/main.py:/app/main.py  # Mount main.py for fast development
+      - ./ai_service/models:/app/models  # Mount models directory
+      - ./ai_service/utils:/app/utils  # Mount utils directory
+    networks:
+      - bharosa_net
+    restart: unless-stopped
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bharosa-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - MONGODB_URI=mongodb://bharosa_admin:bharosa_password_123@mongodb:27017/bharosa_kyc?authSource=admin
+      - AI_SERVICE_URL=http://ai_service:8000
+      - BLOCKCHAIN_NETWORK=http://ganache:8545
+      - BLOCKCHAIN_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+      - BLOCKCHAIN_CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+      - JWT_SECRET=dev_secret_key_change_in_production
+      - CORS_ORIGIN=http://localhost:3000
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5000
+      - DUMMY_AI_VERIFICATION=true
+      - SKIP_ARIES_CREDENTIAL=true
+    env_file:
+      - .env
+    depends_on:
+      - mongodb
+      - ganache
+      - ai_service
+    networks:
+      - bharosa_net
+    restart: unless-stopped
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/uploads:/app/uploads
+      - backend_logs:/app/logs
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=development
+        - REACT_APP_API_URL=http://localhost:5000/api
+    container_name: bharosa-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:5000/api
+      - REACT_APP_ENVIRONMENT=development
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      # Mount source code for hot-reload in development
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      - backend
+    networks:
+      - bharosa_net
+    restart: unless-stopped
+
+networks:
+  bharosa_net:
+    driver: bridge
+    name: bharosa_net
+
+volumes:
+  mongodb_data:
+    name: bharosa_mongodb_data
+  backend_logs:
+    name: bharosa_backend_logs
+  ai_temp:
+    name: bharosa_ai_temp

@@ -1,0 +1,58 @@
+# 🐳 Production Nginx Dockerfile with SSL Support
+FROM nginx:alpine
+
+# Install required tools
+RUN apk add --no-cache \
+    bash \
+    curl \
+    openssl \
+    && rm -rf /var/cache/apk/*
+
+# Copy nginx configuration template
+COPY nginx.prod.conf /etc/nginx/conf.d/default.conf.template
+
+# Create directories
+RUN mkdir -p /var/www/certbot /var/log/nginx /etc/nginx/ssl
+
+# Generate self-signed certificate as fallback
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/nginx/ssl/self-signed.key \
+    -out /etc/nginx/ssl/self-signed.crt \
+    -subj "/C=US/ST=State/L=City/O=Bharosa/CN=bharosa.local"
+
+# Create startup script
+RUN echo '#!/bin/bash' > /docker-entrypoint.sh && \
+    echo 'set -e' >> /docker-entrypoint.sh && \
+    echo '' >> /docker-entrypoint.sh && \
+    echo '# Replace __DOMAIN__ placeholder with actual domain from env' >> /docker-entrypoint.sh && \
+    echo 'DOMAIN=${DOMAIN:-localhost}' >> /docker-entrypoint.sh && \
+    echo 'echo "Configuring Nginx for domain: $DOMAIN"' >> /docker-entrypoint.sh && \
+    echo '' >> /docker-entrypoint.sh && \
+    echo '# Check if SSL cert exists, otherwise use self-signed' >> /docker-entrypoint.sh && \
+    echo 'if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then' >> /docker-entrypoint.sh && \
+    echo '    echo "Using Let'\''s Encrypt certificate"' >> /docker-entrypoint.sh && \
+    echo '    sed "s/__DOMAIN__/$DOMAIN/g" /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf' >> /docker-entrypoint.sh && \
+    echo 'else' >> /docker-entrypoint.sh && \
+    echo '    echo "SSL certificate not found, using self-signed certificate"' >> /docker-entrypoint.sh && \
+    echo '    sed "s/__DOMAIN__/$DOMAIN/g" /etc/nginx/conf.d/default.conf.template | \' >> /docker-entrypoint.sh && \
+    echo '    sed "s|/etc/letsencrypt/live/$DOMAIN/fullchain.pem|/etc/nginx/ssl/self-signed.crt|g" | \' >> /docker-entrypoint.sh && \
+    echo '    sed "s|/etc/letsencrypt/live/$DOMAIN/privkey.pem|/etc/nginx/ssl/self-signed.key|g" | \' >> /docker-entrypoint.sh && \
+    echo '    sed "s|/etc/letsencrypt/live/$DOMAIN/chain.pem|/etc/nginx/ssl/self-signed.crt|g" \' >> /docker-entrypoint.sh && \
+    echo '    > /etc/nginx/conf.d/default.conf' >> /docker-entrypoint.sh && \
+    echo 'fi' >> /docker-entrypoint.sh && \
+    echo '' >> /docker-entrypoint.sh && \
+    echo '# Test nginx configuration' >> /docker-entrypoint.sh && \
+    echo 'nginx -t' >> /docker-entrypoint.sh && \
+    echo '' >> /docker-entrypoint.sh && \
+    echo '# Start nginx' >> /docker-entrypoint.sh && \
+    echo 'exec nginx -g "daemon off;"' >> /docker-entrypoint.sh && \
+    chmod +x /docker-entrypoint.sh
+
+# Expose ports
+EXPOSE 80 443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
+    CMD curl -f http://localhost/health || exit 1
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
