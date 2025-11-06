@@ -140,54 +140,6 @@ Expected response:
 
 ---
 
-## 📤 GitHub Setup
-
-### Before Pushing to GitHub
-
-**IMPORTANT: Protect sensitive data!**
-
-1. **Clean sensitive data:**
-```bash
-# Remove uploaded documents and logs
-rm -rf backend/uploads/* backend/logs/*
-
-# Remove Python cache
-find . -type d -name "__pycache__" -exec rm -rf {} +
-```
-
-2. **Verify .env is ignored:**
-```bash
-# Make sure .env is NOT tracked
-git status | grep "\.env"
-# Should return nothing (or show .env.example only)
-```
-
-3. **Push to GitHub:**
-```bash
-git init
-git add .
-git status  # Review carefully - .env should NOT appear!
-git commit -m "Initial commit: Bharosa decentralized KYC system"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/bharosa-kyc.git
-git push -u origin main
-```
-
-**✅ Safe to commit:**
-- `.env.example` (template with placeholders)
-- Source code files
-- Documentation
-- Docker configurations
-
-**❌ NEVER commit:**
-- `.env` (actual secrets)
-- `node_modules/`
-- `backend/uploads/` (contains PII)
-- `backend/logs/` (may contain sensitive data)
-- `*.key`, `*.pem`, `*.cert` files
-
----
-
 ## 🔧 Configuration
 
 ### Environment Variables
