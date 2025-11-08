@@ -1,0 +1,53 @@
+services:
+  # Backend + Frontend Combined Service
+  - type: web
+    name: bharosa-kyc-app
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend
+    startCommand: cd backend && NODE_ENV=production npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRE
+        value: 7d
+      - key: CORS_ORIGIN
+        fromService:
+          type: web
+          name: bharosa-kyc-app
+          property: host
+      - key: ALLOWED_ORIGINS
+        fromService:
+          type: web
+          name: bharosa-kyc-app
+          property: host
+      - key: AI_SERVICE_URL
+        value: http://localhost:8000
+      - key: BLOCKCHAIN_NETWORK
+        value: https://polygon-mumbai.g.alchemy.com/v2/YOUR_KEY
+      - key: BLOCKCHAIN_PRIVATE_KEY
+        sync: false
+      - key: BLOCKCHAIN_CONTRACT_ADDRESS
+        sync: false
+      - key: DUMMY_AI_VERIFICATION
+        value: true
+      - key: SKIP_ARIES_CREDENTIAL
+        value: true
+      - key: ENABLE_IPFS
+        value: false
+      - key: FACE_MATCH_THRESHOLD
+        value: 75
+      - key: OCR_CONFIDENCE_THRESHOLD
+        value: 60
+      - key: IMAGE_QUALITY_THRESHOLD
+        value: 50
+      - key: TAMPERING_THRESHOLD
+        value: 70
+    healthCheckPath: /health

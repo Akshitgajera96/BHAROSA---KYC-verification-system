@@ -2,6 +2,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
@@ -112,29 +114,59 @@ app.use('/api/blockchain', blockchainRoutes);
 app.use('/api/performance', performanceRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    message: '🔐 Bharosa Decentralized KYC System API',
-    version: '1.0.0',
-    endpoints: {
-      auth: '/api/auth',
-      kyc: '/api/kyc',
-      blockchain: '/api/blockchain',
-      performance: '/api/performance',
-      admin: '/api/admin'
-    },
-    documentation: 'https://github.com/bharosa/api-docs'
+// Serve static files from React build (Production only)
+if (process.env.NODE_ENV === 'production') {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  
+  // Serve static files from the React frontend build
+  app.use(express.static(path.join(__dirname, '../../frontend/build')));
+  
+  // API root endpoint
+  app.get('/api', (req, res) => {
+    res.json({
+      message: '🔐 Bharosa Decentralized KYC System API',
+      version: '1.0.0',
+      endpoints: {
+        auth: '/api/auth',
+        kyc: '/api/kyc',
+        blockchain: '/api/blockchain',
+        performance: '/api/performance',
+        admin: '/api/admin'
+      },
+      documentation: 'https://github.com/bharosa/api-docs'
+    });
   });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
+  
+  // Handle React routing - serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/build/index.html'));
   });
-});
+} else {
+  // Development mode - API root endpoint
+  app.get('/', (req, res) => {
+    res.json({
+      message: '🔐 Bharosa Decentralized KYC System API',
+      version: '1.0.0',
+      endpoints: {
+        auth: '/api/auth',
+        kyc: '/api/kyc',
+        blockchain: '/api/blockchain',
+        performance: '/api/performance',
+        admin: '/api/admin'
+      },
+      documentation: 'https://github.com/bharosa/api-docs'
+    });
+  });
+  
+  // 404 handler for development
+  app.use((req, res) => {
+    res.status(404).json({
+      success: false,
+      message: 'Route not found'
+    });
+  });
+}
 
 // Global error handler
 app.use((err, req, res, next) => {
